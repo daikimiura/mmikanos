@@ -8,6 +8,7 @@
 #include <Protocol/DiskIo2.h>
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
+#include "frame_buffer_config.hpp"
 
 struct MemoryMap
 {
@@ -260,11 +261,32 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24);
+  struct FrameBufferConfig config = {
+      (UINT8 *)gop->Mode->FrameBufferBase,
+      gop->Mode->Info->PixelsPerScanLine,
+      gop->Mode->Info->HorizontalResolution,
+      gop->Mode->Info->VerticalResolution,
+      0,
+  };
 
-  typedef void EntryPointType(UINT64, UINT64);
+  switch (gop->Mode->Info->PixelFormat)
+  {
+  case PixelRedGreenBlueReserved8BitPerColor:
+    config.pixel_format = kPixelRGBResv8BitPerColor;
+    break;
+  case PixelBlueGreenRedReserved8BitPerColor:
+    config.pixel_format = kPixelBGRResv8BitPerColor;
+    break;
+  default:
+    Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
+    while (1)
+      ;
+  }
+
+  typedef void EntryPointType(const struct FrameBufferConfig*);
+  UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24);
   EntryPointType *entry_point = (EntryPointType *)entry_addr;
-  entry_point(gop->Mode->FrameBufferBase, gop->Mode->FrameBufferSize);
+  entry_point(&config);
 
   Print(L"All done\n");
 

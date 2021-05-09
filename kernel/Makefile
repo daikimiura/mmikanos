@@ -9,7 +9,7 @@ LDFLAGS += --entry KernelMain -z norelro --image-base 0x100000 --static
 
 .PHONY: run
 run: $(TARGET)
-	cd $(HOME)/edk2 && source edksetup.sh \
+	cd $(HOME)/edk2 && source edksetup.sh && build\
 	&& $(HOME)/osbook/devenv/run_qemu.sh $(HOME)/edk2/Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi /workspaces/mikanos-devcontainer/mmikanos/kernel/kernel.elf
 
 .PHONY: all
